@@ -48,6 +48,9 @@ void PGRCam::openCam()
         printError(error);
         return ;
     }
+    printProperty(SHUTTER);
+    setCamProperty(SHUTTER, 23);
+    setCamProperty(GAIN, 1.25);
     printProperty(FRAME_RATE);
     printProperty(SHUTTER);
     camTimer->start(130);

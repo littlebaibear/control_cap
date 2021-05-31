@@ -227,7 +227,7 @@ void MainWindow::connectCamCtrl(PGRCam * pgrcam)
         emit signalGetFrame();
         QDateTime dateTime = QDateTime::currentDateTime(); //获取系统当前的时间
         QString date = dateTime.toString("MM-dd-hhmm");//格式化时间
-        QString filePath = ".//" + date;
+        QString filePath = "./manual/" + date;
         mkFilePath(filePath);
         QDir dir(filePath);
         QString imgPath = dir.absoluteFilePath("temp.bmp");
@@ -313,32 +313,32 @@ void MainWindow::autoDetect(SerialWriteRead* serial, PGRCam* pgrcam, bool glassD
         objectNotIn = false;
         emit stopMotor();
         int extraDelay = 300;
-        int speedReduce = 5;
-        int firstMovePulse = 16000;
+        int speedReduce = 100;
+        int firstMovePulse = 14000;
+        if(objectReadyIn) {
+            //首次需要移动?mm左右使玻璃进入视场 1/250r<->4mm<->180pix
+            emit startMotor(ui->periodSpin->value(), ui->DutyRateSpin->value(), true, true, firstMovePulse);
+            Delay_MSec(extraDelay + static_cast<unsigned int>(firstMovePulse * ui->periodSpin->value() )); //保证移动完成,并预留信号发送时间extraDelay
+            objectReadyIn = false;
+            objectNotIn = true;
+            emit stopMotor();//到位后,停止
+            Delay_MSec(delayMSec);
+        }
+        emit startMotor(ui->periodSpin->value()*speedReduce, ui->DutyRateSpin->value(), false, true, 0);//固定频率走下去
         for (int i = 1; i <= 6; i++) {
-            if(objectReadyIn) {
-                //首次需要移动?mm左右使玻璃进入视场 1/250r<->4mm<->180pix
-                emit startMotor(ui->periodSpin->value() * speedReduce, ui->DutyRateSpin->value(), true, true, firstMovePulse);
-                Delay_MSec(extraDelay + static_cast<unsigned int>(firstMovePulse * ui->periodSpin->value() * speedReduce)); //保证移动完成,并预留信号发送时间extraDelay
-                objectReadyIn = false;
-                objectNotIn = true;
-                emit stopMotor();//到位后,停止
-                Delay_MSec(delayMSec);
-            } else {
-                Delay_MSec(extraDelay + static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value() * speedReduce));//除首次外,每次次延时设置光源并拍照
-            }
             lightSetAndCap(pgrcam);
             picsId++;
             //移动?mm左右,使玻璃下一部分进入视场
-            if (i != 6) {
-                emit startMotor(ui->periodSpin->value() * speedReduce, ui->DutyRateSpin->value(), true, true, ui->pulseSpin->value());
+            if(i != 6) {
+                Delay_MSec(23000);
+            } else {
+                Delay_MSec(1000);
             }
-            Delay_MSec(extraDelay + static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value() * speedReduce));
         }
         serial->serialTimer->start(50);
-//                Delay_MSec(static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value()));
     } else if(objectNotIn) {
         //物体不在时,重设光源和电机状态,定时器状态,
+        emit stopMotor();
         lightModeSet(0, 0, 0);
         emit startMotor(ui->periodSpin->value(), ui->DutyRateSpin->value(), false, true, 0);
         objectNotIn = false;//但只触发一次光源设置和电机启动
@@ -376,13 +376,16 @@ void MainWindow::lightSetAndCap(PGRCam* pgrcam)
     //main1
     ch = lightSetAndOneCap(pgrcam, delayMSec, 4095, 0, 0, "main1");
     ch = lightSetAndOneCap(pgrcam, delayMSec, 0, 4095, 0, "main2");
-    qDebug() << " whole" << timer.elapsed() << "ms" << endl;
+    qDebug() << " whole shot" << timer.elapsed() << "ms" << endl;
 //    lightSetAndOneCap(delayMSec,);
 }
 const char *MainWindow::lightSetAndOneCap(PGRCam *pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar)
 {
-    int delayLight = 300;//光源稳定延时
+    int delayLight = 400;//光源稳定延时
+    QTime timer;
+    timer.start();
     lightModeSet(mainValue, main2value, subValue);
+    qDebug() << u8"光源设置耗时" << timer.elapsed() << "ms" << endl;
     Delay_MSec(delayLight);//保证光源稳定
     emit signalGetFrame();
     Delay_MSec(delayMSec);//保证图像数据以传达
