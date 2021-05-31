@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>imgs/contorl32.ico</file>
+        <file>imgs/contorl64.ico</file>
+        <file>imgs/contorl128.ico</file>
+        <file>imgs/control.png</file>
+    </qresource>
+</RCC>
