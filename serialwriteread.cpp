@@ -115,10 +115,10 @@ void SerialWriteRead::slotStartMotor(double periodValue, int DRValue, bool stepM
     slotDutyRateSpin(periodValue, DRValue);
     //设置方向
     if(forwardReverse) {
-        sendData("0a", 0);
+        sendData("0b", 0);
         qDebug() << "forward";
     } else {
-        sendData("0a", 1);
+        sendData("0b", 1);
         qDebug() << "reverse";
     }
     readData();
