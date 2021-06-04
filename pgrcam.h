@@ -37,6 +37,7 @@ private:
     QThread *camThread;
     QTimer *camTimer;
 
+
     void printError(Error e);
     void printCameraInfo(CameraInfo *pCamInfo);
 //    void printBuildInfo();
@@ -50,3 +51,4 @@ public slots:
 };
 
 #endif // PGRCAM_H
+

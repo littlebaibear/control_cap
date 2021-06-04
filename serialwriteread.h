@@ -25,6 +25,7 @@ public:
 
     void slotPeriodSpin(double periodValue = 100); //响应主界面周期改变
     void slotDutyRateSpin(double periodValue, int DRValue);//响应主界面占空比改变
+    void slotSetStepPulse(int step, int pulse); //设置启动停止的台阶脉冲
 
     void slotPIR();//响应类内定时器向主界面发送PIR返回值
 //    void show_func_id();

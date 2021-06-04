@@ -11,8 +11,12 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setWindowIcon(QIcon(":/imgs/contorl32.ico"));
     this->setWindowTitle("port control and cap");
     sysInit();
+//    char StepPulse[2] = {20, 5};
+//    unsigned short int *p = (unsigned short int *)StepPulse;
+//    qDebug() << StepPulse;
     qRegisterMetaType<CameraInfo>("CameraInfo");
     qRegisterMetaType<Image>("Image");
+    qRegisterMetaType<PropertyType>("PropertyType");
     qDebug() << u8"主线程对象的地址:" << QThread::currentThreadId() << endl;
     SerialWriteRead *serial = new SerialWriteRead;
     PGRCam *pgrcam = new PGRCam;
@@ -86,6 +90,12 @@ void MainWindow::sysInit()
     ui->periodSpin->setSuffix("ms");
     ui->DutyRateSpin->setRange(0, 100);
     ui->DutyRateSpin->setSuffix("%");
+    ui->shutterSpin->setRange(0.01, 23);
+    ui->shutterSpin->setSuffix("ms");
+    ui->gainSpin->setRange(0, 47);
+    ui->gainSpin->setSuffix("dB");
+    ui->frameSpin->setRange(1, 43);
+    ui->frameSpin->setSuffix("fps");
     //
     ui->modeState->setEnabled(false);
     ui->LightState->setEnabled(false);
@@ -123,11 +133,13 @@ void MainWindow::connectSerailCtrl(SerialWriteRead * serial)
             ui->checkPIR3->setChecked(!(PIRValue & 0x20));
             int numOfDetected = ui->checkPIR1->isChecked() + ui->checkPIR2->isChecked() + ui->checkPIR3->isChecked();
             qDebug() << "num of detected: " << numOfDetected << endl;
-            if (ui->checkPIR1->isChecked()&ui->checkPIR2->isChecked()&ui->checkPIR3->isChecked()) {
+            glassStatus = ui->checkPIR1->isChecked()&ui->checkPIR2->isChecked()&ui->checkPIR3->isChecked();
+            if(glassStatus & lastGlassStatus) {
                 emit glassReady(true);
             } else {
                 emit glassReady(false);
             }
+            lastGlassStatus = glassStatus;//解决PIR误触发的问题
         } else {
             //            serialTimer->stop();
             //暂停串口控件与串口设置的连接,重新初始化界面后再连接,避免
@@ -195,6 +207,7 @@ void MainWindow::connectCamCtrl(PGRCam * pgrcam)
     connect(this, &MainWindow::signalOpenCam, pgrcam, &PGRCam::openCam);
     connect(this, &MainWindow::signalCloseCam, pgrcam, &PGRCam::closeCam);
     connect(this, &MainWindow::signalGetFrame, pgrcam, &PGRCam::getFrame);
+    connect(this, &MainWindow::signalSetCamProperty, pgrcam, &PGRCam::setCamProperty);
     //cam->主线程控件
     connect(pgrcam, &PGRCam::camError, this, [ = ] {
         ui->camStateLabel->setText("wrong connect");
@@ -206,6 +219,15 @@ void MainWindow::connectCamCtrl(PGRCam * pgrcam)
 //        qDebug() << "frame ready";
 //    });
     //主线程控件->主线程,cam
+    connect(ui->shutterSpin, &QDoubleSpinBox::editingFinished, [ = ]() {
+        emit signalSetCamProperty(SHUTTER, ui->shutterSpin->value());
+    });
+    connect(ui->gainSpin, &QDoubleSpinBox::editingFinished, [ = ]() {
+        emit signalSetCamProperty(GAIN, ui->gainSpin->value());
+    });
+    connect(ui->frameSpin, &QDoubleSpinBox::editingFinished, [ = ]() {
+        emit signalSetCamProperty(FRAME_RATE, ui->frameSpin->value());
+    });
     connect(ui->openCamBtn, &QPushButton::clicked, this, [ = ] {
         if (ui->openCamBtn->text() == "open camera")
         {
@@ -313,32 +335,32 @@ void MainWindow::autoDetect(SerialWriteRead* serial, PGRCam* pgrcam, bool glassD
         objectNotIn = false;
         emit stopMotor();
         int extraDelay = 300;
-        int speedReduce = 100;
-        int firstMovePulse = 14000;
-        if(objectReadyIn) {
-            //首次需要移动?mm左右使玻璃进入视场 1/250r<->4mm<->180pix
-            emit startMotor(ui->periodSpin->value(), ui->DutyRateSpin->value(), true, true, firstMovePulse);
-            Delay_MSec(extraDelay + static_cast<unsigned int>(firstMovePulse * ui->periodSpin->value() )); //保证移动完成,并预留信号发送时间extraDelay
-            objectReadyIn = false;
-            objectNotIn = true;
-            emit stopMotor();//到位后,停止
-            Delay_MSec(delayMSec);
-        }
-        emit startMotor(ui->periodSpin->value()*speedReduce, ui->DutyRateSpin->value(), false, true, 0);//固定频率走下去
+        int speedReduce = 1;
+        int firstMovePulse = 15000;
         for (int i = 1; i <= 6; i++) {
+            if(objectReadyIn) {
+                //首次需要移动?mm左右使玻璃进入视场 1/250r<->4mm<->180pix
+                emit startMotor(ui->periodSpin->value() * speedReduce, ui->DutyRateSpin->value(), true, true, firstMovePulse);
+                Delay_MSec(extraDelay + static_cast<unsigned int>(firstMovePulse * ui->periodSpin->value() * speedReduce)); //保证移动完成,并预留信号发送时间extraDelay
+                objectReadyIn = false;
+                objectNotIn = true;
+//                emit stopMotor();//到位后,停止
+//                Delay_MSec(delayMSec);
+            } else {
+                Delay_MSec(extraDelay + static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value() * speedReduce));//除首次外,每次次延时设置光源并拍照
+            }
             lightSetAndCap(pgrcam);
             picsId++;
             //移动?mm左右,使玻璃下一部分进入视场
-            if(i != 6) {
-                Delay_MSec(23000);
-            } else {
-                Delay_MSec(1000);
+            if (i != 6) {
+                emit startMotor(ui->periodSpin->value() * speedReduce, ui->DutyRateSpin->value(), true, true, ui->pulseSpin->value());
+                Delay_MSec(extraDelay + static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value() * speedReduce));
             }
         }
         serial->serialTimer->start(50);
+//                Delay_MSec(static_cast<unsigned int>(ui->periodSpin->value()*ui->pulseSpin->value()));
     } else if(objectNotIn) {
         //物体不在时,重设光源和电机状态,定时器状态,
-        emit stopMotor();
         lightModeSet(0, 0, 0);
         emit startMotor(ui->periodSpin->value(), ui->DutyRateSpin->value(), false, true, 0);
         objectNotIn = false;//但只触发一次光源设置和电机启动
@@ -348,7 +370,6 @@ void MainWindow::autoDetect(SerialWriteRead* serial, PGRCam* pgrcam, bool glassD
         serial->serialTimer->start(50);
     }
 }
-
 void MainWindow::lightSetAndCap(PGRCam* pgrcam)
 {
     QTime timer;
@@ -381,7 +402,7 @@ void MainWindow::lightSetAndCap(PGRCam* pgrcam)
 }
 const char *MainWindow::lightSetAndOneCap(PGRCam *pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar)
 {
-    int delayLight = 400;//光源稳定延时
+    int delayLight = 100;//光源稳定延时
     QTime timer;
     timer.start();
     lightModeSet(mainValue, main2value, subValue);

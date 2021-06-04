@@ -48,10 +48,11 @@ void PGRCam::openCam()
         printError(error);
         return ;
     }
-    printProperty(SHUTTER);
-    setCamProperty(SHUTTER, 23);
-    setCamProperty(GAIN, 1.25);
+//    printProperty(SHUTTER);
+//    setCamProperty(SHUTTER, 23);
+//    setCamProperty(GAIN, 1.25);
     printProperty(FRAME_RATE);
+    printProperty(GAIN);
     printProperty(SHUTTER);
     camTimer->start(130);
 }
@@ -141,7 +142,7 @@ void PGRCam::printProperty(PropertyType propType = FRAME_RATE)
             // Note that the actual recording frame rate may be slower,
             // depending on the bus speed and disk writing speed.
             qDebug() << propType << "is supported!";
-            qDebug() << "prop value is " << prop.absValue << endl;
+            qDebug() << propType << " value is " << prop.absValue << endl;
         }
     }
 }

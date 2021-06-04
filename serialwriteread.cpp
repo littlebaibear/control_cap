@@ -106,11 +106,20 @@ void SerialWriteRead::slotDutyRateSpin(double periodValue, int DRValue)
     readData();
     qDebug() << endl;
 }
+
+void SerialWriteRead::slotSetStepPulse(int step, int pulse)
+{
+    qDebug() << "-------StepPulse-------";
+    QString cmdNum = "10";
+    int StepPulse = step * 256 + pulse;
+    sendData(cmdNum, StepPulse);
+    readData();
+}
 //设置参数并启动电机
 void SerialWriteRead::slotStartMotor(double periodValue, int DRValue, bool stepMove, bool forwardReverse, int pulseNum)
 {
     qDebug() << u8"启动电机";
-    slotStopMotor();
+//    slotStopMotor();//停止电机可能造成电机抖动之类的,正常走完脉冲即可,不用停止
     slotPeriodSpin(periodValue);
     slotDutyRateSpin(periodValue, DRValue);
     //设置方向
@@ -125,6 +134,7 @@ void SerialWriteRead::slotStartMotor(double periodValue, int DRValue, bool stepM
     if (stepMove) {
         sendData("0c", pulseNum);//固定脉冲
         readData();
+        slotSetStepPulse(20, 5);
         sendData("08", 1);
         qDebug() << "step";
     } else {
@@ -225,7 +235,7 @@ QByteArray SerialWriteRead::readData()
         buf = local_port.readAll();
         local_port.readyRead();
         qDebug() << u8"接收成功 ";
-        qDebug() << "成功返回值 " << buf.toHex();
+        qDebug() << u8"成功返回值 " << buf.toHex();
         return buf;
     } else  {
         buf = local_port.readAll();

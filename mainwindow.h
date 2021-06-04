@@ -41,6 +41,7 @@ public:
 
 private slots:
     void slotResetUi();//接收串口可用信号后重置界面状态
+
 signals:
     void subValueReady(int subValue);
     void sub2ValueReady(int subValue);
@@ -55,6 +56,7 @@ signals:
     void signalOpenCam();
     void signalCloseCam();
     void signalGetFrame();
+    void signalSetCamProperty(PropertyType, double propValue);
     void glassReady(bool glassDetected);
 private:
     //
@@ -74,6 +76,7 @@ private:
     bool lastCheck = false;
     bool dispLastGlassId = true;
     QMutex mutex;
+    bool glassStatus = false, lastGlassStatus = false;
 
     //
     // function

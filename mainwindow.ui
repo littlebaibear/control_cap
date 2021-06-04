@@ -426,7 +426,11 @@
                </widget>
               </item>
               <item>
-               <widget class="QDoubleSpinBox" name="shutterSpin"/>
+               <widget class="QDoubleSpinBox" name="shutterSpin">
+                <property name="value">
+                 <double>23.000000000000000</double>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -440,7 +444,11 @@
                </widget>
               </item>
               <item>
-               <widget class="QDoubleSpinBox" name="frameSpin"/>
+               <widget class="QDoubleSpinBox" name="frameSpin">
+                <property name="value">
+                 <double>43.000000000000000</double>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -454,7 +462,11 @@
                </widget>
               </item>
               <item>
-               <widget class="QDoubleSpinBox" name="gainSpin"/>
+               <widget class="QDoubleSpinBox" name="gainSpin">
+                <property name="value">
+                 <double>10.000000000000000</double>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
