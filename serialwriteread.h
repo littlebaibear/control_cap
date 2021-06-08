@@ -39,6 +39,7 @@ public:
     /*-------------variables-------------*/
     QSerialPort local_port;
     QTimer *serialTimer;
+    QMutex mutex;
 
 private:
     /*-----------------functions----------------*/

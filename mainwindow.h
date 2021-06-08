@@ -55,8 +55,8 @@ signals:
     void lightReady();
     void signalOpenCam();
     void signalCloseCam();
-    void signalGetFrame();
-    void signalSetCamProperty(PropertyType, double propValue);
+    void signalGetFrame(unsigned int uiCamera);
+    void signalSetCamProperty(PropertyType, double propValue, unsigned int uiCamera);
     void glassReady(bool glassDetected);
 private:
     //
@@ -90,7 +90,7 @@ private:
     const char* mkImgSaveName(QString imgDir);
     void autoDetect(SerialWriteRead *serial, PGRCam *pgrcam, bool glassDetected);
     void lightSetAndCap(PGRCam* pgrcam);
-    const char *lightSetAndOneCap(PGRCam* pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar);
+    void lightSetAndSingleCap(PGRCam* pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar);
 };
 
 #endif // MAINWINDOW_H

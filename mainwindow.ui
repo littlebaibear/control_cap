@@ -386,6 +386,9 @@
                 <property name="text">
                  <string>前进</string>
                 </property>
+                <property name="shortcut">
+                 <string>Right</string>
+                </property>
                 <property name="checkable">
                  <bool>false</bool>
                 </property>
@@ -396,6 +399,9 @@
                 <property name="text">
                  <string>后退</string>
                 </property>
+                <property name="shortcut">
+                 <string>Left</string>
+                </property>
                </widget>
               </item>
              </layout>
@@ -404,6 +410,9 @@
              <widget class="QPushButton" name="motorStopBtn">
               <property name="text">
                <string>停止电机</string>
+              </property>
+              <property name="shortcut">
+               <string>Space</string>
               </property>
              </widget>
             </item>

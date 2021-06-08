@@ -215,9 +215,9 @@ void SerialWriteRead::sendData(QString cmdNum, int data)
     QByteArray cmdHex = concatCmdStr(cmdNum, dataStr);
     //发送
     local_port.write(cmdHex);
-    qDebug() << u8"串口号 " << local_port.portName();
+//    qDebug() << u8"串口号 " << local_port.portName();
     //qDebug() << u8"命令字 " << cmdNum << dataStr ;
-    qDebug() << u8"命令字 " << cmdHex.toHex() ;
+//    qDebug() << u8"命令字 " << cmdHex.toHex() ;
     //发送后等待其发送完毕
     if(local_port.waitForBytesWritten(100)) {
         qDebug() << u8"发送成功 ";
@@ -235,12 +235,12 @@ QByteArray SerialWriteRead::readData()
         buf = local_port.readAll();
         local_port.readyRead();
         qDebug() << u8"接收成功 ";
-        qDebug() << u8"成功返回值 " << buf.toHex();
+//        qDebug() << u8"成功返回值 " << buf.toHex();
         return buf;
     } else  {
         buf = local_port.readAll();
         qDebug() << u8"接收失败 ";
-        qDebug() << u8"失败返回值 " << buf.toHex();
+//        qDebug() << u8"失败返回值 " << buf.toHex();
         return buf;
         emit receiveFail();
     }

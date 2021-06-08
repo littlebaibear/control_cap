@@ -23,6 +23,7 @@ public:
     QMutex mutex;
     QImage grayImg;
     Image convertImg;
+    unsigned int numCameras;
 
 signals:
     void camError();
@@ -31,7 +32,7 @@ private:
     BusManager busMgr;
     PGRGuid guid;//用来存放相机地址
     Error error;
-    Camera cam;//相机实例
+    Camera **cam;//相机实例
     CameraInfo camInfo;
     Image rawImg;//相机获取的原始图像
     QThread *camThread;
@@ -42,12 +43,12 @@ private:
     void printCameraInfo(CameraInfo *pCamInfo);
 //    void printBuildInfo();
 
-    void printProperty(PropertyType propType);
+    void printProperty(PropertyType propType, unsigned int uiCamera);
 public slots:
     void openCam();
-    void getFrame();
+    void getFrame(unsigned int uiCamera);
     void closeCam();
-    void setCamProperty(PropertyType propType, double value);
+    void setCamProperty(PropertyType propType, double value, unsigned int uiCamera);
 };
 
 #endif // PGRCAM_H
