@@ -258,9 +258,16 @@
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="mainModeBtn">
+               <widget class="QRadioButton" name="mainPlainModeBtn">
                 <property name="text">
-                 <string>main</string>
+                 <string>main_plain</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="mainEdgeModeBtn">
+                <property name="text">
+                 <string>main_edge</string>
                 </property>
                </widget>
               </item>
@@ -286,6 +293,9 @@
              <widget class="QCheckBox" name="checkPIR1">
               <property name="text">
                <string>红外1</string>
+              </property>
+              <property name="tristate">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -313,6 +323,45 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_20">
+              <item>
+               <widget class="QLabel" name="subDIvLabel">
+                <property name="text">
+                 <string>细分数</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="subDivSpin">
+                <property name="maximum">
+                 <number>30000</number>
+                </property>
+                <property name="value">
+                 <number>25000</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_21">
+              <item>
+               <widget class="QLabel" name="stepAngleLabel">
+                <property name="text">
+                 <string>固有步距角</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="stepAngleSpin">
+                <property name="value">
+                 <double>1.800000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
               <item>
                <widget class="QLabel" name="PeriodLabel">
@@ -324,11 +373,14 @@
               <item>
                <widget class="QDoubleSpinBox" name="periodSpin">
                 <property name="value">
-                 <double>0.010000000000000</double>
+                 <double>0.040000000000000</double>
                 </property>
                </widget>
               </item>
              </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_22"/>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -356,6 +408,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QLabel" name="motorSpeedLabel">
+              <property name="text">
+               <string>电机转速:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_7">
               <item>
                <widget class="QCheckBox" name="stepMoveCheck">
@@ -370,7 +429,7 @@
                  <number>65535</number>
                 </property>
                 <property name="value">
-                 <number>7053</number>
+                 <number>6700</number>
                 </property>
                 <property name="displayIntegerBase">
                  <number>10</number>

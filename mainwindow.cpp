@@ -96,6 +96,9 @@ void MainWindow::sysInit()
     ui->gainSpin->setSuffix("dB");
     ui->frameSpin->setRange(1, 43);
     ui->frameSpin->setSuffix("fps");
+    ui->stepAngleSpin->setSuffix(u8"°");
+    auto motorSpeed = (1 / ui->periodSpin->value() * ui->stepAngleSpin->value()) / (ui->subDivSpin->value() / 200 * 360) * 1000;
+    ui->motorSpeedLabel->setText(QString(u8"电机转速: %1 r/s").arg(motorSpeed));
     //
     ui->modeState->setEnabled(false);
     ui->LightState->setEnabled(false);
@@ -134,9 +137,17 @@ void MainWindow::connectSerailCtrl(SerialWriteRead * serial)
             int numOfDetected = ui->checkPIR1->isChecked() + ui->checkPIR2->isChecked() + ui->checkPIR3->isChecked();
             qDebug() << "num of detected: " << numOfDetected << endl;
             glassStatus = ui->checkPIR1->isChecked()&ui->checkPIR2->isChecked()&ui->checkPIR3->isChecked();
+//            QIcon ligthOnIcon = QIcon(":/imgs/指示灯亮.ico");
+//            QIcon ligthOffIcon = QIcon(":/imgs/指示灯灭.ico");
             if(glassStatus & lastGlassStatus) {
+//                ui->checkPIR1->setIcon(ligthOnIcon);
+//                ui->checkPIR2->setIcon(ligthOnIcon);
+//                ui->checkPIR3->setIcon(ligthOnIcon);
                 emit glassReady(true);
             } else {
+//                ui->checkPIR1->setIcon(ligthOffIcon);
+//                ui->checkPIR2->setIcon(ligthOffIcon);
+//                ui->checkPIR3->setIcon(ligthOffIcon);
                 emit glassReady(false);
             }
             lastGlassStatus = glassStatus;//解决PIR误触发的问题
@@ -176,8 +187,13 @@ void MainWindow::connectSerailCtrl(SerialWriteRead * serial)
         //mainvalue = 4095, subvalue = 4095;
         lightModeSet(mainvalue, main2value, subvalue);
     });
-    connect(ui->mainModeBtn, &QRadioButton::clicked, this, [ = ] {
+    connect(ui->mainPlainModeBtn, &QRadioButton::clicked, this, [ = ] {
         int mainvalue = 4095, main2value = 4095, subvalue = 0;
+        //mainvalue = 4095, subvalue = 0;
+        lightModeSet(mainvalue, main2value, subvalue);
+    });
+    connect(ui->mainEdgeModeBtn, &QRadioButton::clicked, this, [ = ] {
+        int mainvalue = 600, main2value = 600, subvalue = 0;
         //mainvalue = 4095, subvalue = 0;
         lightModeSet(mainvalue, main2value, subvalue);
     });
@@ -200,6 +216,18 @@ void MainWindow::connectSerailCtrl(SerialWriteRead * serial)
     });
     connect(ui->motorStopBtn, &QPushButton::clicked, serial, &SerialWriteRead::slotStopMotor);
     //    emit stopMotor();
+    connect(ui->subDivSpin, &QSpinBox::editingFinished, this, [ = ] {
+        auto motorSpeed = (1 / ui->periodSpin->value() * ui->stepAngleSpin->value()) / (ui->subDivSpin->value() / 200 * 360) * 1000;
+        ui->motorSpeedLabel->setText(QString(u8"电机转速: %1 r/s").arg(motorSpeed));
+    });
+    connect(ui->periodSpin, &QSpinBox::editingFinished, this, [ = ] {
+        auto motorSpeed = (1 / ui->periodSpin->value() * ui->stepAngleSpin->value()) / (ui->subDivSpin->value() / 200 * 360) * 1000;
+        ui->motorSpeedLabel->setText(QString(u8"电机转速: %1 r/s").arg(motorSpeed));
+    });
+    connect(ui->stepAngleSpin, &QSpinBox::editingFinished, this, [ = ] {
+        auto motorSpeed = (1 / ui->periodSpin->value() * ui->stepAngleSpin->value()) / (ui->subDivSpin->value() / 200 * 360) * 1000;
+        ui->motorSpeedLabel->setText(QString(u8"电机转速: %1 r/s").arg(motorSpeed));
+    });
 }
 void MainWindow::connectCamCtrl(PGRCam * pgrcam)
 {
@@ -346,9 +374,6 @@ void MainWindow::autoDetect(SerialWriteRead* serial, PGRCam* pgrcam, bool glassD
 {
     int delayMSec = 50;//电机停止稳定延时
     if (glassDetected) {
-        if (glassId == 0) {
-            glassId = 1;
-        }
         serial->serialTimer->stop();//停止检测PIR状态
         qDebug() << "glass detected";
         //1.检测到glass时,停止/减速
@@ -356,7 +381,7 @@ void MainWindow::autoDetect(SerialWriteRead* serial, PGRCam* pgrcam, bool glassD
         emit stopMotor();
         int extraDelay = 300;
         int speedReduce = 1;
-        int firstMovePulse = 15000;
+        int firstMovePulse = 13500;
         for (int i = 1; i <= 6; i++) {
             if(objectReadyIn) {
                 //首次需要移动?mm左右使玻璃进入视场 1/250r<->4mm<->180pix
@@ -418,7 +443,7 @@ void MainWindow::lightSetAndCap(PGRCam* pgrcam)
 }
 void MainWindow::lightSetAndSingleCap(PGRCam *pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar)
 {
-    int delayLight = 100;//光源稳定延时
+    int delayLight = 150;//光源稳定延时
     QTime timer;
     timer.start();
     lightModeSet(mainValue, main2value, subValue);
