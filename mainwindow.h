@@ -1,6 +1,7 @@
 ﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <vector>
 #include <QMainWindow>
 #include <QSerialPort>
 #include <QSerialPortInfo>
@@ -25,6 +26,7 @@
 #include "pgrcam.h"
 
 //using namespace FlyCapture2;
+using namespace std;
 namespace Ui
 {
     class MainWindow;
@@ -91,6 +93,7 @@ private:
     void autoDetect(SerialWriteRead *serial, PGRCam *pgrcam, bool glassDetected);
     void lightSetAndCap(PGRCam* pgrcam);
     void lightSetAndSingleCap(PGRCam* pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar);
+    void lightSetAndSingleCapForManual(PGRCam *pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char *lightModeChar, int gainValue);
 };
 
 #endif // MAINWINDOW_H

@@ -280,43 +280,22 @@ void MainWindow::connectCamCtrl(PGRCam * pgrcam)
         }
     });
     connect(ui->manualCapBtn, &QPushButton::clicked, this, [ = ] {
-//        QString date, filePath, imgPath;
-//        QDateTime dateTime;
-        QString filePath, imgPath;
-        QDir dir;
-        std::string str;
-        const char* ch;
-        for (unsigned int uiCamera = 0; uiCamera < pgrcam->numCameras; uiCamera++)
+        vector<int> gainValues = {0, 5, 10, 15, 20, 25, 30, 40, 45};
+        for (unsigned int uicamera = 0; uicamera < pgrcam->numCameras; uicamera++)
         {
-            emit signalGetFrame(uiCamera);
-            Delay_MSec(10);//这个很重要,否则主线程发出的信号还没有触发camera线程的槽,就执行了图像的保存,导致报错,所以必须加延时或者连接方式选择阻塞
-//            dateTime = QDateTime::currentDateTime(); //获取系统当前的时间
-//            date = dateTime.toString("MM-dd-hhmm");//格式化时间
-//            filePath = "./manual/" + date;
-            filePath = "./manual/";
-            mkFilePath(filePath);
-            dir = QDir(filePath);
-//            imgPath = dir.absoluteFilePath("temp.bmp");
-            imgPath = dir.absoluteFilePath(QString("%1.bmp").arg(uiCamera));
-            str = imgPath.toStdString();
-            ch = str.c_str();
-            mutex.lock();
-            int imagesize = pgrcam->convertImg.GetDataSize();
-            qDebug() << u8"主线程中图片数据大小 " << imagesize;
-            Error error = pgrcam->convertImg.Save(ch);
-            if (error != PGRERROR_OK) {
-                QMessageBox::warning(this, "warning", "save fail");
-                error.PrintErrorTrace();
-                return;
-            }
-            mutex.unlock();
+            emit signalSetCamProperty(SHUTTER, ui->shutterSpin->value(), uicamera);
         }
 
-        //Error error = srcImg.Save(ch);
-//        QPixmap pixmap(ch);
-//        QSize qSize = ui->currentPic->size();
-//        pixmap = pixmap.scaled(qSize, Qt::KeepAspectRatio);
-//        ui->currentPic->setPixmap(pixmap);
+        for (auto gainValue : gainValues)
+        {
+            for (unsigned int uicamera = 0; uicamera < pgrcam->numCameras; uicamera++) {
+                emit signalSetCamProperty(GAIN, gainValue, uicamera);
+            }
+            lightSetAndSingleCapForManual(pgrcam, 0, 4095, 4095, 4095, "all", gainValue);
+            lightSetAndSingleCapForManual(pgrcam, 0, 4095, 4095, 0, "main_plain", gainValue);
+            lightSetAndSingleCapForManual(pgrcam, 0, 0, 0, 4095, "sub", gainValue);
+            lightSetAndSingleCapForManual(pgrcam, 0, 600, 600, 0, "main_edge", gainValue);
+        }
     });
 }
 /*----------------slots------------*/
@@ -420,9 +399,9 @@ void MainWindow::lightSetAndCap(PGRCam* pgrcam)
     QTime timer;
     timer.start();
     for (unsigned int uiCamera = 0; uiCamera < pgrcam->numCameras; uiCamera++) {
-        emit signalSetCamProperty(SHUTTER, 23, uiCamera);
+        emit signalSetCamProperty(SHUTTER, ui->shutterSpin->value(), uiCamera);
 //        Delay_MSec(5);//保证设置完成
-        emit signalSetCamProperty(GAIN, 10, uiCamera);
+        emit signalSetCamProperty(GAIN, ui->gainSpin->value(), uiCamera);
 //        Delay_MSec(5);
     }
     int delayMSec = 0;//图片数据传输完成延时
@@ -487,6 +466,65 @@ void MainWindow::lightSetAndSingleCap(PGRCam *pgrcam, int delayMSec, int mainVal
 //        QDir dir(imgDir);
         dir = QDir(imgDir);
         imgPath = dir.absoluteFilePath(QString("%1.%2").arg(QString::number(picsId)).arg("bmp"));
+        str = imgPath.toStdString();
+        ch = str.c_str();
+        //Error error = srcImg.Save(ch);
+        mutex.lock();
+        Error error = pgrcam->convertImg.Save(ch);
+        if (error != PGRERROR_OK) {
+            error.PrintErrorTrace();
+            return ;
+        }
+        mutex.unlock();
+    }
+}
+
+void MainWindow::lightSetAndSingleCapForManual(PGRCam *pgrcam, int delayMSec, int mainValue, int main2value, int subValue, const char* lightModeChar, int gainValue)
+{
+    int delayLight = 150;//光源稳定延时
+    QTime timer;
+    timer.start();
+    lightModeSet(mainValue, main2value, subValue);
+    qDebug() << u8"光源设置耗时" << timer.elapsed() << "ms" << endl;
+    Delay_MSec(delayLight);//保证光源稳定
+    QString lightModeStr = QString(lightModeChar);
+    QString imgDir;
+    QDir dir;
+    QString imgPath;
+    std::string str;
+    const char* ch;
+    for (unsigned int uiCamera = 0; uiCamera < pgrcam->numCameras; uiCamera++) {
+        if (lightModeStr.contains("edge", Qt::CaseInsensitive)) {
+            // 如果时边缘拍照,低亮度,低增益
+//            emit signalSetCamProperty(SHUTTER, 23, uiCamera);
+            emit signalSetCamProperty(GAIN, 0, uiCamera);
+        }
+        emit signalGetFrame(uiCamera);
+        Delay_MSec(delayMSec);//保证图像数据以传达
+        //程序重运行时,检查文件夹可用
+        if (dispLastGlassId) {
+            dispLastGlassId = false;
+            QDir tempdir("./manual");
+            QStringList  glassFolders;
+            // mFolderPath = tempdir.fromNativeSeparators(mFolderPath);//  "\\"转为"/"
+            if (!tempdir.exists()) {
+                qDebug() << u8"文件夹不存在";
+            } else {
+                tempdir.setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
+//            tempdir.setSorting(QDir::Name);
+                glassFolders = tempdir.entryList();
+            }
+            if (!glassFolders.isEmpty()) {
+                qDebug() << u8"上一张玻璃编号" << glassFolders.back();
+//            qDebug() << u8"上一张玻璃编号: " << glassFolders.size();
+                glassId = glassFolders.size() + 1;
+            }
+        }
+        imgDir = "./manual/glass" + QString::number(glassId) + QString::number(gainValue) + "dB" + "/fromCam" + QString::number(uiCamera) + "/" + lightModeChar;
+        mkFilePath(imgDir);//创建文件夹
+//        QDir dir(imgDir);
+        dir = QDir(imgDir);
+        imgPath = dir.absoluteFilePath(QString("%1.%2").arg(QString::number(picsId)).arg("jpg"));
         str = imgPath.toStdString();
         ch = str.c_str();
         //Error error = srcImg.Save(ch);
